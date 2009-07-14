@@ -8,8 +8,8 @@ class AuditRecord(models.Model):
     model_name = models.CharField(max_length = 50)
     model_id = models.PositiveIntegerField()
     field_name = models.CharField(max_length = 50)
-    old_val = models.CharField(max_length = 255)
-    new_val = models.CharField(max_length = 255)
+    old_val = models.CharField(max_length = 255, blank=True, null=True)
+    new_val = models.CharField(max_length = 255, blank=True, null=True)
 
     class Meta:
         ordering = ['audit_date']
@@ -42,8 +42,17 @@ class AuditModel(models.Model):
         super(AuditModel, self).save(force_insert, force_update)
 
         for f in self._get_audit_fields():
-            oldval = getattr(old, f)
-            newval = getattr(self, f)
+            try:
+                oldval = getattr(old, f, None)
+            except:
+                oldval = None
+            newval = getattr(self, f, None)
+
+            if (isinstance(oldval, models.Model)):
+                oldval = getattr(oldval, 'pk', oldval)
+            if (isinstance(newval, models.Model)):
+                newval = getattr(newval, 'pk', newval)
+    
             if (oldval != newval):
                 self._recordChange(f, oldval, newval)
         
@@ -81,5 +90,5 @@ class AuditModel(models.Model):
         "Get a list of fields from a model for which value changes should be audited"
         # The use of _meta is not encouraged, as it is not an external API for Django
         # But I don't see any other reliable way to get a list of a model's fields.
-        return [f.name for f in self._meta.local_fields]
+        return [f.column for f in self._meta.local_fields]
         
