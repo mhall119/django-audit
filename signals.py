@@ -3,7 +3,7 @@ Hook existing objects into auditing sytem through Django signals
 
 Use:
 
-from moffitt.audit.signals import auditSave, auditDelete
+from audit.signals import auditSave, auditDelete
 from django.db.models.signals import pre_save, pre_delete
 
 pre_save.connect(auditSave, sender=YourObject)
