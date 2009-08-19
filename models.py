@@ -29,9 +29,9 @@ class AuditModel(models.Model):
         
         # Get the currently saved value for the model
         # Create a new model of the same class if no previous instance exist
-        if (self.pk is not None and self.pk > 0):
+        if (self.id is not None and self.id > 0):
             try:
-                old = self.__class__.objects.get(id=self.pk)
+                old = self.__class__.objects.get(id=self.id)
             except:
                 old = self.__class__()
         else:
@@ -49,16 +49,16 @@ class AuditModel(models.Model):
             newval = getattr(self, f, None)
 
             if (isinstance(oldval, models.Model)):
-                oldval = getattr(oldval, 'pk', oldval)
+                oldval = getattr(oldval, 'id', oldval)
             if (isinstance(newval, models.Model)):
-                newval = getattr(newval, 'pk', newval)
+                newval = getattr(newval, 'id', newval)
     
             if (oldval != newval):
                 self._recordChange(f, oldval, newval)
         
     def delete(self):
-        if (self.pk is not None and self.pk > 0):
-            old = self.__class__.objects.get(id=self.pk)
+        if (self.id is not None and self.id > 0):
+            old = self.__class__.objects.get(id=self.id)
             for f in old._get_audit_fields():
                 self._recordChange(f, getattr(old, f), None)
         super(AuditModel, self).delete()
@@ -90,5 +90,5 @@ class AuditModel(models.Model):
         "Get a list of fields from a model for which value changes should be audited"
         # The use of _meta is not encouraged, as it is not an external API for Django
         # But I don't see any other reliable way to get a list of a model's fields.
-        return [f.column for f in self._meta.local_fields]
+        return [f.column for f in self._meta.fields]
         
