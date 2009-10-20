@@ -68,7 +68,8 @@ class AuditModel(models.Model):
 
     def _recordChange(self, fieldname, oldval, newval):
         rec = AuditRecord()
-        rec.user_id = audituser.get_current_user_id()
+        user_id = audituser.get_current_user_id() or 0
+        rec.user_id = user_id
         rec.app_name = self._meta.app_label;
         rec.model_name = self.__class__.__name__
         rec.model_id = self.id
