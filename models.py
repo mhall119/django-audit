@@ -76,18 +76,12 @@ class AuditModel(models.Model):
         rec.app_name = self._meta.app_label;
         rec.model_name = self.__class__.__name__
         rec.model_id = self.id
-<<<<<<< local
         rec.field_name = fieldname[0:50]
         rec.old_val = str(oldval)[0:255]
         rec.new_val = str(newval)[0:255]
         rec.save()
-=======
-        rec.field_name = fieldname
-        rec.old_val = oldval
-        rec.new_val = newval
         if (oldval and oldval.__str__().strip() != '') or (newval and newval.__str__().strip() != ''): 
             rec.save()
->>>>>>> other
         
     def _recordChange_old(self, fieldname, oldval, newval):
         "Record a modified field in the audit table"
