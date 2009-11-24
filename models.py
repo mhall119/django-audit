@@ -1,19 +1,21 @@
 from django.db import models
+from django.contrib.auth.models import User, AnonymousUser
 import audituser
 
 class AuditRecord(models.Model):
-    audit_date = models.DateTimeField(auto_now_add=True)
-    user_id = models.PositiveIntegerField()
-    app_name = models.CharField(max_length = 50)
-    model_name = models.CharField(max_length = 50)
-    model_id = models.PositiveIntegerField()
-    field_name = models.CharField(max_length = 50)
-    old_val = models.CharField(max_length = 255, blank=True, null=True)
-    new_val = models.CharField(max_length = 255, blank=True, null=True)
+    audit_date = models.DateTimeField("Date", auto_now_add=True)
+    user = models.ForeignKey(User)
+    app_name = models.CharField("Application", max_length = 50)
+    model_name = models.CharField("Model", max_length = 50)
+    model_id = models.PositiveIntegerField("Model ID")
+    field_name = models.CharField("Field", max_length = 50)
+    old_val = models.CharField("From", max_length = 255, blank=True, null=True)
+    new_val = models.CharField("To", max_length = 255, blank=True, null=True)
 
     class Meta:
         ordering = ['audit_date']
         db_table = 'audit_log'
+        verbose_name = "Audit Record"
         
     def __unicode__(self):
         return "%s.%s[%s].%s: %s -> %s" % (self.app_name, self.model_name, self.model_id, self.field_name, self.old_val, self.new_val)
@@ -24,6 +26,8 @@ class AuditModel(models.Model):
     class Meta:
         abstract = True
 
+    audit_ignore = []
+    
     def save(self, force_insert=False, force_update=False):
         # add auditing functionality when a sub-class is saved
         
@@ -68,14 +72,13 @@ class AuditModel(models.Model):
 
     def _recordChange(self, fieldname, oldval, newval):
         rec = AuditRecord()
-        user_id = audituser.get_current_user_id() or 0
-        rec.user_id = user_id
+        rec.user = audituser.get_current_user() or AnonymousUser()
         rec.app_name = self._meta.app_label;
         rec.model_name = self.__class__.__name__
         rec.model_id = self.id
-        rec.field_name = fieldname
-        rec.old_val = oldval
-        rec.new_val = newval
+        rec.field_name = fieldname[0:50]
+        rec.old_val = str(oldval)[0:255]
+        rec.new_val = str(newval)[0:255]
         rec.save()
         
     def _recordChange_old(self, fieldname, oldval, newval):
@@ -91,5 +94,5 @@ class AuditModel(models.Model):
         "Get a list of fields from a model for which value changes should be audited"
         # The use of _meta is not encouraged, as it is not an external API for Django
         # But I don't see any other reliable way to get a list of a model's fields.
-        return [f.column for f in self._meta.fields]
+        return [f.column for f in self._meta.fields if f.name not in self.audit_ignore]
         
