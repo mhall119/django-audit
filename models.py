@@ -13,7 +13,7 @@ class AuditRecord(models.Model):
     new_val = models.CharField("To", max_length = 255, blank=True, null=True)
 
     class Meta:
-        ordering = ['audit_date']
+        ordering = ['-audit_date']
         db_table = 'audit_log'
         verbose_name = "Audit Record"
         
