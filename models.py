@@ -79,8 +79,10 @@ class AuditModel(models.Model):
         rec.field_name = fieldname[0:50]
         rec.old_val = str(oldval)[0:255]
         rec.new_val = str(newval)[0:255]
-        rec.save()
-        if (oldval and oldval.__str__().strip() != '') or (newval and newval.__str__().strip() != ''): 
+#        rec.save()
+        if (oldval and oldval.__str__().strip() != '') or (newval and newval.__str__().strip() != ''):
+            if oldval and newval and oldval.__str__().strip() == newval.__str__().strip():
+                return
             rec.save()
         
     def _recordChange_old(self, fieldname, oldval, newval):
