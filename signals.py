@@ -72,4 +72,4 @@ def _get_audit_fields(instance):
     "Get a list of fields from a model for which value changes should be audited"
     # The use of _meta is not encouraged, as it is not an external API for Django
     # But I don't see any other reliable way to get a list of a model's fields.
-    return [f.column for f in instance._meta.local_fields]
+    return [f.column for f in self._meta.fields]
