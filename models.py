@@ -27,6 +27,7 @@ class AuditModel(models.Model):
         abstract = True
 
     audit_ignore = []
+    audit_censor = []
     
     def save(self, force_insert=False, force_update=False):
         # add auditing functionality when a sub-class is saved
@@ -52,19 +53,29 @@ class AuditModel(models.Model):
                 oldval = None
             newval = getattr(self, f, None)
 
+            # For some reason oldval will be an int, when the field is infact a 
+            # boolean, so this will force oldval to be the right type
+            if isinstance(newval, bool) and isinstance(oldval, int):
+                oldval = bool(oldval)
+                
             if (isinstance(oldval, models.Model)):
                 oldval = getattr(oldval, 'id', oldval)
             if (isinstance(newval, models.Model)):
                 newval = getattr(newval, 'id', newval)
     
-            if (oldval != newval):
-                self._recordChange(f, oldval, newval)
+            if ((oldval and oldval.__str__().strip() != '') or (newval and newval.__str__().strip() != '')) and not (oldval and newval and oldval.__str__().strip() == newval.__str__().strip()):
+                if f in self.audit_censor:
+                    self._recordChange(f, '*****', '*****')
+                else:
+                    self._recordChange(f, oldval, newval)
         
     def delete(self):
         if (self.id is not None and self.id > 0):
             old = self.__class__.objects.get(id=self.id)
             for f in old._get_audit_fields():
-                self._recordChange(f, getattr(old, f), None)
+                oldval = getattr(old, f, None)
+                if oldval is not None:
+                    self._recordChange(f, oldval, None)
         super(AuditModel, self).delete()
     
     def auditLog(self):
@@ -80,19 +91,7 @@ class AuditModel(models.Model):
         rec.old_val = str(oldval)[0:255]
         rec.new_val = str(newval)[0:255]
         
-        if (oldval and oldval.__str__().strip() != '') or (newval and newval.__str__().strip() != ''):
-            if oldval and newval and oldval.__str__().strip() == newval.__str__().strip():
-                return
-            rec.save()
-        
-    def _recordChange_old(self, fieldname, oldval, newval):
-        "Record a modified field in the audit table"
-        from django.db import connection, transaction
-        cursor = connection.cursor()
-    
-        query = "INSERT INTO auditlog (audit_date, audit_user, model_name, model_id, field_name, old_value, new_value) values (null, %s, %s, %s, %s, %s, %s)"
-        cursor.execute(query, [audituser.get_current_user_id(), self.__class__.__name__, self.id, fieldname, oldval, newval])
-        transaction.commit_unless_managed()
+        rec.save()
         
     def _get_audit_fields(self):
         "Get a list of fields from a model for which value changes should be audited"
