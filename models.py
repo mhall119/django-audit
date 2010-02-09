@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 import audituser
 
 class AuditRecord(models.Model):
     audit_date = models.DateTimeField("Date", auto_now_add=True)
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, null=True)
     app_name = models.CharField("Application", max_length = 50)
     model_name = models.CharField("Model", max_length = 50)
     model_id = models.PositiveIntegerField("Model ID")
@@ -83,7 +83,7 @@ class AuditModel(models.Model):
 
     def _recordChange(self, fieldname, oldval, newval):
         rec = AuditRecord()
-        rec.user = audituser.get_current_user() or AnonymousUser()
+        rec.user = audituser.get_current_user() 
         rec.app_name = self._meta.app_label;
         rec.model_name = self.__class__.__name__
         rec.model_id = self.id
